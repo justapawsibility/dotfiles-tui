@@ -6,6 +6,8 @@
 #include <unistd.h>
 #include "include/useful.hpp"
 #include <argparse/argparse.hpp>
+#include <ftxui/component/component_base.hpp>
+#include <ftxui/component/component_options.hpp>
 #include <ftxui/dom/elements.hpp>
 #include <ftxui/screen/screen.hpp>
 
@@ -303,7 +305,7 @@ int main(int argc, char *argv[]) {
   else {
     Element document = hbox({
       text("left")   | border,
-      text("middle") | border | flex,
+      text("middle") | border | flex | color(Color::Green),
       text("right")  | border,
     });
    
