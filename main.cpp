@@ -6,9 +6,12 @@
 #include <unistd.h>
 #include "include/useful.hpp"
 #include <argparse/argparse.hpp>
+#include <ftxui/component/component.hpp>
 #include <ftxui/component/component_base.hpp>
 #include <ftxui/component/component_options.hpp>
+#include <ftxui/component/screen_interactive.hpp>
 #include <ftxui/dom/elements.hpp>
+#include <ftxui/dom/table.hpp>
 #include <ftxui/screen/screen.hpp>
 
 #define CONF_FILE "configurations.csv"
@@ -17,14 +20,23 @@ using namespace std;
 using namespace filesystem;
 using namespace ftxui;
 
+
 struct config {
-    public:
-        string name;
-        path source;
-        path dest;
-        path source2;
-        path dest2;
+  public:
+      string name;
+      path source;
+      path dest;
+      path source2;
+      path dest2;
 };
+
+struct config_list {
+  public:
+    vector<string> installed;
+    vector<string> not_installed;
+};
+
+Component VMenu(std::vector<std::string>* entries, int* selected, vector<config>* c);
 
 vector<config> load_config() {
     vector<config> configurations;
@@ -118,6 +130,21 @@ void list_config(vector<config>* configs) {
   
 }
 
+config_list list_config_tui(vector<config>* configs) {
+  config_list list;
+  for (config confi : *configs) {
+      path temp_dest = replace_home(confi.dest);
+      path temp_dest2 = replace_home(confi.dest2);
+      if (is_symlink(temp_dest)) {
+        list.installed.push_back(confi.name);
+      }
+      else {
+        list.not_installed.push_back(confi.name);
+      }
+  }
+  return list;
+}
+
 void install_config(vector<config>* configs, const string name, bool forced) {
   for (config confi : *configs) {
     if (name == confi.name) {
@@ -193,7 +220,9 @@ void remove_config(vector<config>* configs, const string name) {
     }
   }
 }
-
+void printHello() {
+  cout << "hello" << endl;
+}
 int main(int argc, char *argv[]) {
   vector<config> confi = load_config();
   bool forced = false;
@@ -240,16 +269,19 @@ int main(int argc, char *argv[]) {
     exit(1);
   }
 
-  if (program["-q"] == true) {
+  if (program["-q"] == true || program["-l"] == true) {
     if (argc == 2) {
-      cerr << program;
-      exit(1);
+      if (program["-q"] == true) {
+        cerr << program;
+        exit(1);
+      }
+      if (program["-l"] == true) {
+        list_config(&confi);
+        exit(0);
+      }
     }
     if (program["-f"] == true) {
       forced = true;
-    }
-    if (program["-l"] == true) {
-      list_config(&confi);
     }
     if (program.present("-i")){
       auto parse = program.get<vector<string>>("-i");
@@ -303,19 +335,67 @@ int main(int argc, char *argv[]) {
   }
   
   else {
-    Element document = hbox({
-      text("left")   | border,
-      text("middle") | border | flex | color(Color::Green),
-      text("right")  | border,
+    vector<string> entries;
+    for (config confia : confi) {
+      entries.push_back(confia.name); 
+    }
+    int selected = 0;
+    auto vmenu__ = VMenu(&entries, &selected, &confi);
+    auto guide = Renderer([&] {
+      return text("q = quit, space/enter = install, f = force install, u = uninstall") | border | flex_grow;
     });
-   
-    auto screen = Screen::Create(
-      Dimension::Full(),       
-      Dimension::Fit(document) 
-    );
-   
-    Render(screen, document);
-   
-    screen.Print();
+    auto screen = ScreenInteractive::TerminalOutput();
+    auto global = Container::Vertical({
+      vmenu__,
+      guide,
+    });
+    global |= CatchEvent([&](Event event) {
+      if (event == Event::Character('q')) {
+        screen.ExitLoopClosure()();
+        return true;
+      }
+      if (event == Event::Character('u')) {
+        remove_config(&confi, entries[selected]);
+        return true;
+      }
+      if (event == Event::Character(' ')) {
+        install_config(&confi, entries[selected], false);
+        return true;
+      }
+      if (event == Event::Character('\n')) {
+        install_config(&confi, entries[selected], false);
+        return true;
+      }
+      if (event == Event::Character('f')) {
+        install_config(&confi, entries[selected], true);
+        return true;
+      }
+      return false;
+    });
+    screen.Loop(global);
   }
+}
+Component VMenu(std::vector<std::string>* entries, int* selected, vector<config>* c) {
+  auto option = MenuOption::Vertical();
+  option.entries_option.transform = [c](EntryState state) {
+    Element e = state.active ? text("[" + state.label + "]")
+                             : text(" " + state.label + " ");
+    config_list listt = list_config_tui(c);
+    if (find(listt.installed.begin(), listt.installed.end(), state.label) != listt.installed.end()){
+      e = e | color(Color::Green); 
+    }
+    // if (find(listt.not_installed.begin(), listt.not_installed.end(), state.label) != listt.not_installed.end()){
+    //   e = e | color(Color::Red); 
+    // }
+    
+    if (state.focused)
+      e = e | bold;
+
+    if (state.focused)
+      e = e | bold;
+    if (state.active)
+      e = e | bold;
+    return e;
+  };
+  return Menu(entries, selected, option);
 }
