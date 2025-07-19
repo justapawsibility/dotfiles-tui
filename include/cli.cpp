@@ -20,8 +20,13 @@ vector<config> load_config() {
     return configurations;
 }
 
+bool compareConfig(const config& a, const config& b) {
+  return a.name < b.name;
+}
+
 void write_config(vector<config>* c) {
   ofstream FILE(CONF_FILE);
+  sort(c->begin(), c->end(), compareConfig);
   for (config confi : *c) {
     FILE << confi.name << "," << confi.source.string() << "," << confi.dest.string() << "," << confi.source2.string() << "," << confi.dest2.string() << endl;
   }
