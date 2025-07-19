@@ -155,8 +155,18 @@ int main(int argc, char *argv[]) {
     auto guide = Renderer([&] {
       return text("q = quit, space/enter = install, f = force install, u = uninstall") | border | flex_grow | size(WIDTH, LESS_THAN, 80) | center;
     });
+    auto filler = Renderer([&] {
+      auto fill = hbox({
+                    hbox({
+                      text(""),
+                    }),
+                  });
+        
+      return fill;
+    });
     auto screen = ScreenInteractive::TerminalOutput();
     auto global = Container::Vertical({
+      filler,
       vmenu__,
       guide,
     });
