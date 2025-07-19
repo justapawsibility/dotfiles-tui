@@ -153,7 +153,7 @@ int main(int argc, char *argv[]) {
     int selected = 0;
     auto vmenu__ = VMenu(&entries, &selected, &confi);
     auto guide = Renderer([&] {
-      return text("q = quit, space/enter = install, f = force install, u = uninstall") | border | flex_grow;
+      return text("q = quit, space/enter = install, f = force install, u = uninstall") | border | flex_grow | size(WIDTH, LESS_THAN, 80) | center;
     });
     auto screen = ScreenInteractive::TerminalOutput();
     auto global = Container::Vertical({
@@ -169,11 +169,7 @@ int main(int argc, char *argv[]) {
         remove_config(&confi, entries[selected]);
         return true;
       }
-      if (event == Event::Character(' ')) {
-        install_config(&confi, entries[selected], false);
-        return true;
-      }
-      if (event == Event::Character('\n')) {
+      if (event == Event::Character(' ') || event == Event::Character('\n') || event == Event::Character('i')) {
         install_config(&confi, entries[selected], false);
         return true;
       }
@@ -195,9 +191,6 @@ Component VMenu(std::vector<std::string>* entries, int* selected, vector<config>
     if (find(listt.installed.begin(), listt.installed.end(), state.label) != listt.installed.end()){
       e = e | color(Color::Green); 
     }
-    // if (find(listt.not_installed.begin(), listt.not_installed.end(), state.label) != listt.not_installed.end()){
-    //   e = e | color(Color::Red); 
-    // }
     
     if (state.focused)
       e = e | bold;
