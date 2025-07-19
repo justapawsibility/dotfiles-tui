@@ -16,9 +16,12 @@ FetchContent_MakeAvailable(argparse)
 include_directories(include)
 
 add_executable(a.out
-  main.cpp
+  tui.cpp
   include/useful.cpp
-  include/useful.hpp)
+  include/useful.hpp
+  include/cli.cpp
+  include/cli.hpp
+  )
 
 target_link_libraries(a.out PRIVATE
     # Chose a submodule
