@@ -1,6 +1,9 @@
 #include "cli.hpp"
 
 
+bool compareConfig(const config& a, const config& b) {
+  return a.name < b.name;
+}
 
 vector<config> load_config() {
     vector<config> configurations;
@@ -17,11 +20,8 @@ vector<config> load_config() {
         configurations.push_back(temp);
     }
     FILE.close();
+    sort(configurations.begin(), configurations.end(), compareConfig);
     return configurations;
-}
-
-bool compareConfig(const config& a, const config& b) {
-  return a.name < b.name;
 }
 
 void write_config(vector<config>* c) {
