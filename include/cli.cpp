@@ -5,8 +5,9 @@ bool compareConfig(const config& a, const config& b) {
   return a.name < b.name;
 }
 
-vector<config> load_config() {
+config_lista load_config() {
     vector<config> configurations;
+    config_lista config_list;
     string buffer;
     ifstream FILE(CONF_FILE);
     while(getline (FILE, buffer)) {
@@ -21,7 +22,16 @@ vector<config> load_config() {
     }
     FILE.close();
     sort(configurations.begin(), configurations.end(), compareConfig);
-    return configurations;
+    config_list.configurations = configurations;
+    for (config confi : configurations) {
+      if (confi.name.find('*') != string::npos) {
+        config_list.sudo.push_back(confi.name);
+      }
+      else {
+        config_list.nonsudo.push_back(confi.name);
+      }
+    }
+    return config_list;
 }
 
 void write_config(vector<config>* c) {

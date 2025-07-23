@@ -23,7 +23,14 @@ struct config {
       path dest2;
 };
 
-vector<config> load_config();
+struct config_lista {
+  public:
+    vector<config> configurations;
+    vector<string> nonsudo;
+    vector<string> sudo;
+};
+
+config_lista load_config();
 void write_config(vector<config>* c);
 void add3_config(vector<config>* c, string name, string source, string dest);
 void add5_config(vector<config>* c, string name, string source, string dest, string source2, string dest2);

@@ -35,7 +35,12 @@ config_list list_config_tui(vector<config>* configs) {
 }
 
 int main(int argc, char *argv[]) {
-  vector<config> confi = load_config();
+  config_lista temp = load_config();
+  vector<string> nonsudo, sudo;
+  vector<config> confi;
+  confi = temp.configurations;
+  nonsudo = temp.nonsudo;
+  sudo = temp.sudo;
   bool forced = false;
 
   argparse::ArgumentParser program("dotfiles");
@@ -122,7 +127,7 @@ int main(int argc, char *argv[]) {
           remove_config(&confi, str);
           delete_config(&confi, str);
           cout << str << " was deleted!" << endl;
-          confi = load_config();
+          confi = load_config().configurations;
         }
       }
       else {
@@ -133,7 +138,7 @@ int main(int argc, char *argv[]) {
             remove_config(&confi, str);
             delete_config(&confi, str);
             cout << str << " was deleted!" << endl;
-            confi = load_config();
+            confi = load_config().configurations;
           }
         }
         else {
@@ -146,15 +151,19 @@ int main(int argc, char *argv[]) {
   }
   
   else {
-    vector<string> entries;
-    for (config confia : confi) {
-      entries.push_back(confia.name); 
-    }
-    int selected = 0;
-    auto vmenu__ = VMenu(&entries, &selected, &confi);
     auto guide = Renderer([&] {
       return text("q = quit, space/enter = install, f = force install, u = uninstall") | border | flex_grow | size(WIDTH, LESS_THAN, 80) | center;
     });
+    int selected = 0;
+    int tab_selected = 0;
+    vector<string> tab_values{
+      "normal",
+      "sudo",
+    };
+    string test;
+    auto tab_toggle = Toggle(&tab_values, &tab_selected);
+    auto vmenu_nonsudo = VMenu(&nonsudo, &selected, &confi);
+    auto vmenu_sudo = VMenu(&sudo, &selected, &confi);
     auto filler = Renderer([&] {
       auto fill = hbox({
                     hbox({
@@ -164,32 +173,42 @@ int main(int argc, char *argv[]) {
         
       return fill;
     });
-    auto screen = ScreenInteractive::TerminalOutput();
+    auto tab_container = Container::Tab({
+        vmenu_nonsudo,
+        vmenu_sudo,
+    }, &tab_selected);
     auto global = Container::Vertical({
-      filler,
-      vmenu__,
-      guide,
+      tab_toggle,
+      tab_container
     });
-    global |= CatchEvent([&](Event event) {
+    auto renderer = Renderer(global, [&] {
+      return vbox({
+        tab_toggle->Render(),
+        separator(),
+        tab_container->Render(),
+      }) | border;
+    });
+    auto screen = ScreenInteractive::TerminalOutput();
+    renderer |= CatchEvent([&](Event event) {
       if (event == Event::Character('q')) {
         screen.ExitLoopClosure()();
         return true;
       }
       if (event == Event::Character('u')) {
-        remove_config(&confi, entries[selected]);
+        remove_config(&confi, nonsudo[selected]);
         return true;
       }
       if (event == Event::Character(' ') || event == Event::Character('\n') || event == Event::Character('i')) {
-        install_config(&confi, entries[selected], false);
+        install_config(&confi, nonsudo[selected], false);
         return true;
       }
       if (event == Event::Character('f')) {
-        install_config(&confi, entries[selected], true);
+        install_config(&confi, nonsudo[selected], true);
         return true;
       }
       return false;
     });
-    screen.Loop(global);
+    screen.Loop(renderer);
   }
 }
 Component VMenu(std::vector<std::string>* entries, int* selected, vector<config>* c) {
