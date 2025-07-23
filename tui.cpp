@@ -211,6 +211,7 @@ int main(int argc, char *argv[]) {
     screen.Loop(renderer);
   }
 }
+
 Component VMenu(std::vector<std::string>* entries, int* selected, vector<config>* c) {
   auto option = MenuOption::Vertical();
   option.entries_option.transform = [c](EntryState state) {
