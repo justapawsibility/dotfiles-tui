@@ -4,6 +4,7 @@
 #include <ftxui/component/component.hpp>
 #include <ftxui/component/component_base.hpp>
 #include <ftxui/component/component_options.hpp>
+#include <ftxui/component/captured_mouse.hpp>
 #include <ftxui/component/screen_interactive.hpp>
 #include <ftxui/dom/elements.hpp>
 #include <ftxui/dom/table.hpp>
@@ -32,6 +33,10 @@ config_list list_config_tui(vector<config>* configs) {
       }
   }
   return list;
+}
+
+void print_tui(vector<config> *configs,string name) {
+  print_config(configs, name);
 }
 
 int main(int argc, char *argv[]) {
@@ -151,6 +156,7 @@ int main(int argc, char *argv[]) {
   }
   
   else {
+    auto screen = ScreenInteractive::TerminalOutput();
     auto guide = Renderer([&] {
       return text("q = quit, space/enter = install, f = force install, u = uninstall") | border | flex_grow | size(WIDTH, LESS_THAN, 80) | center;
     });
@@ -159,11 +165,29 @@ int main(int argc, char *argv[]) {
     vector<string> tab_values{
       "normal",
       "sudo",
+      "input",
     };
-    string test;
+    string name;
+    string source;
+    string dest;
+    string source2;
+    string dest2;
     auto tab_toggle = Toggle(&tab_values, &tab_selected);
     auto vmenu_nonsudo = VMenu(&nonsudo, &selected, &confi);
     auto vmenu_sudo = VMenu(&sudo, &selected, &confi);
+    auto input_form = Container::Vertical({
+        Container::Horizontal({
+          Input(&name, "NAME"),
+          Input(&source, "SOURCE"),
+          Input(&dest, "DEST"),
+          Input(&source2, "SOURCE2 - OPTIONAL"),
+          Input(&dest2, "DEST2 - OPTIONAL"),
+        }),
+        Container::Horizontal({
+            Button({"Submit - 3", [&] { add3_config(&confi, name, source, dest); screen.ExitLoopClosure()(); }}),
+            Button({"Submit - 5", [&] { add5_config(&confi, name, source, dest, source2, dest2); screen.ExitLoopClosure()(); }}),
+        }),
+    });
     auto filler = Renderer([&] {
       auto fill = hbox({
                     hbox({
@@ -176,6 +200,7 @@ int main(int argc, char *argv[]) {
     auto tab_container = Container::Tab({
         vmenu_nonsudo,
         vmenu_sudo,
+        input_form,
     }, &tab_selected);
     auto global = Container::Vertical({
       tab_toggle,
@@ -188,21 +213,20 @@ int main(int argc, char *argv[]) {
         tab_container->Render(),
       }) | border;
     });
-    auto screen = ScreenInteractive::TerminalOutput();
     renderer |= CatchEvent([&](Event event) {
-      if (event == Event::Character('q')) {
+      if (event == Event::Character('q') && tab_selected != 2) {
         screen.ExitLoopClosure()();
         return true;
       }
-      if (event == Event::Character('u')) {
+      if (event == Event::Character('u') && tab_selected != 2) {
         remove_config(&confi, nonsudo[selected]);
         return true;
       }
-      if (event == Event::Character(' ') || event == Event::Character('\n') || event == Event::Character('i')) {
+      if ((event == Event::Character(' ') || event == Event::Character('\n') || event == Event::Character('i')) && tab_selected != 2) {
         install_config(&confi, nonsudo[selected], false);
         return true;
       }
-      if (event == Event::Character('f')) {
+      if (event == Event::Character('f') && tab_selected != 2) {
         install_config(&confi, nonsudo[selected], true);
         return true;
       }
