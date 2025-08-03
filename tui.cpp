@@ -211,6 +211,7 @@ int main(int argc, char *argv[]) {
         tab_toggle->Render(),
         separator(),
         tab_container->Render(),
+        guide->Render(),
       }) | border;
     });
     renderer |= CatchEvent([&](Event event) {
