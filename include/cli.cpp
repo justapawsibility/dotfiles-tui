@@ -69,6 +69,12 @@ void delete_config(vector<config>* c, const string name) {
     if (confi.name != name) {
       temp.push_back(confi);
     }
+    else {
+      path temp_src = weakly_canonical(replace_home(confi.source));
+      path temp_src2 = weakly_canonical(replace_home(confi.source2));
+      remove_all(temp_src);
+      remove_all(temp_src2);
+    }
   }
   write_config(&temp);
 }
