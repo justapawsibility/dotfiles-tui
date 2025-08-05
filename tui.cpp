@@ -212,7 +212,7 @@ int main(int argc, char *argv[]) {
         separator(),
         tab_container->Render(),
         guide->Render(),
-      }) | border;
+      }) | border | size(WIDTH, LESS_THAN, 100);
     });
     renderer |= CatchEvent([&](Event event) {
       if (event == Event::Character('q') && tab_selected != 2) {
