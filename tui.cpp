@@ -49,9 +49,6 @@ int main(int argc, char *argv[]) {
   bool forced = false;
 
   argparse::ArgumentParser program("dotfiles");
-  program.add_argument("-q", "--quiet")
-    .flag()
-    .help("quiet mode");
   program.add_argument("-l", "--list")
     .flag()
     .help("lists configurations");
@@ -90,17 +87,7 @@ int main(int argc, char *argv[]) {
     exit(1);
   }
 
-  if (program["-q"] == true || program["-l"] == true) {
-    if (argc == 2) {
-      if (program["-q"] == true) {
-        cerr << program;
-        exit(1);
-      }
-      if (program["-l"] == true) {
-        list_config(&confi);
-        exit(0);
-      }
-    }
+  if (argc >= 2) {
     if (program["-f"] == true) {
       forced = true;
     }
@@ -151,6 +138,10 @@ int main(int argc, char *argv[]) {
           exit(0);
         }
       }
+    }
+    if (program["-l"] == true) {
+      list_config(&confi);
+      exit(0);
     }
     return 0;
   }
