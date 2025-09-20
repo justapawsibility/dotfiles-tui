@@ -52,6 +52,9 @@ int main(int argc, char *argv[]) {
   program.add_argument("-l", "--list")
     .flag()
     .help("lists configurations");
+  program.add_argument("-s", "--sort")
+    .flag()
+    .help("lists configurations");
   program.add_argument("-f", "--force")
     .flag()
     .help("enables the use of force");
@@ -90,6 +93,9 @@ int main(int argc, char *argv[]) {
   if (argc >= 2) {
     if (program["-f"] == true) {
       forced = true;
+    }
+    if (program["-s"] == true) {
+      write_config(&confi);
     }
     if (program.present("-i")){
       auto parse = program.get<vector<string>>("-i");
