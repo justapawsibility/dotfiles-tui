@@ -151,107 +151,86 @@ int main(int argc, char *argv[]) {
     }
     return 0;
   }
+  
   else {
-  auto screen = ScreenInteractive::Fullscreen();
-
-  // Guide / Help bar
-  auto guide = Renderer([&] {
-    return hbox({
-      text(" q: quit ") | bold | color(Color::RedLight),
-      text(" │ "),
-      text(" space/enter/i: install ") | bold | color(Color::GreenLight),
-      text(" │ "),
-      text(" f: force install ") | bold | color(Color::YellowLight),
-      text(" │ "),
-      text(" u: uninstall ") | bold | color(Color::BlueLight),
-    }) | border | center;
-  });
-
-  int selected = 0;
-  int tab_selected = 0;
-
-  vector<string> tab_values{"Normal", "Sudo", "Add Config"};
-
-  // Tab toggle
-  auto tab_toggle = Toggle(&tab_values, &tab_selected);
-
-  // Menus
-  auto vmenu_nonsudo = VMenu(&nonsudo, &selected, &confi);
-  auto vmenu_sudo   = VMenu(&sudo, &selected, &confi);
-
-  // Input form
-  string name, source, dest, source2, dest2;
-  auto input_form = Container::Vertical({
-      Container::Horizontal({
-        Input(&name,    "Name")    | border,
-        Input(&source,  "Source")  | border,
-        Input(&dest,    "Dest")    | border,
-      }) | flex,
-      Container::Horizontal({
-        Input(&source2, "Source2 (optional)") | border,
-        Input(&dest2,   "Dest2 (optional)")   | border,
-      }) | flex,
-      Container::Horizontal({
-        Button("Submit (3)", [&] { 
-          add3_config(&confi, name, source, dest); 
-          screen.ExitLoopClosure()(); 
-        }) | color(Color::GreenLight) | borderRounded,
-        Button("Submit (5)", [&] { 
-          add5_config(&confi, name, source, dest, source2, dest2); 
-          screen.ExitLoopClosure()(); 
-        }) | color(Color::CyanLight) | borderRounded,
-      }) | center,
-  }) | borderRounded | size(WIDTH, EQUAL, 80) | center;
-
-  // Tab container
-  auto tab_container = Container::Tab({
-      vmenu_nonsudo,
-      vmenu_sudo,
-      input_form,
-  }, &tab_selected);
-
-  // Root container
-  auto global = Container::Vertical({
-    tab_toggle,
-    tab_container,
-  });
-
-  // Renderer
-  auto renderer = Renderer(global, [&] {
-    return vbox({
-      text(" Dotfiles Manager ") | bold | center | color(Color::White),
-      separator(),
-      tab_toggle->Render() | border | center,
-      separator(),
-      tab_container->Render() | flex,
-      separator(),
-      guide->Render(),
-    }) | borderDouble | size(WIDTH, LESS_THAN, 100) | flex;
-  });
-
-  // Events
-  renderer |= CatchEvent([&](Event event) {
-    if (event == Event::Character('q') && tab_selected != 2) {
-      screen.ExitLoopClosure()();
-      return true;
-    }
-    if (event == Event::Character('u') && tab_selected == 0 && selected < nonsudo.size()) {
-      remove_config(&confi, nonsudo[selected]);
-      return true;
-    }
-    if ((event == Event::Character(' ') || event == Event::Character('\n') || event == Event::Character('i')) 
-        && tab_selected == 0 && selected < nonsudo.size()) {
-      install_config(&confi, nonsudo[selected], false);
-      return true;
-    }
-    if (event == Event::Character('f') && tab_selected == 0 && selected < nonsudo.size()) {
-      install_config(&confi, nonsudo[selected], true);
-      return true;
-    }
-    return false;
-  });
-
-  screen.Loop(renderer);
+    auto screen = ScreenInteractive::TerminalOutput();
+    auto guide = Renderer([&] {
+      return text("q = quit, space/enter = install, f = force install, u = uninstall") | border | flex_grow | size(WIDTH, LESS_THAN, 80) | center;
+    });
+    int selected = 0;
+    int tab_selected = 0;
+    vector<string> tab_values{
+      "normal",
+      "sudo",
+      "input",
+    };
+    string name;
+    string source;
+    string dest;
+    string source2;
+    string dest2;
+    auto tab_toggle = Toggle(&tab_values, &tab_selected);
+    auto vmenu_nonsudo = VMenu(&nonsudo, &selected, &confi);
+    auto vmenu_sudo = VMenu(&sudo, &selected, &confi);
+    auto input_form = Container::Vertical({
+        Container::Horizontal({
+          Input(&name, "NAME"),
+          Input(&source, "SOURCE"),
+          Input(&dest, "DEST"),
+          Input(&source2, "SOURCE2 - OPTIONAL"),
+          Input(&dest2, "DEST2 - OPTIONAL"),
+        }),
+        Container::Horizontal({
+            Button({"Submit - 3", [&] { add3_config(&confi, name, source, dest); screen.ExitLoopClosure()(); }}),
+            Button({"Submit - 5", [&] { add5_config(&confi, name, source, dest, source2, dest2); screen.ExitLoopClosure()(); }}),
+        }),
+    });
+    auto filler = Renderer([&] {
+      auto fill = hbox({
+                    hbox({
+                      text(""),
+                    }),
+                  });
+        
+      return fill;
+    });
+    auto tab_container = Container::Tab({
+        vmenu_nonsudo,
+        vmenu_sudo,
+        input_form,
+    }, &tab_selected);
+    auto global = Container::Vertical({
+      tab_toggle,
+      tab_container
+    });
+    auto renderer = Renderer(global, [&] {
+      return vbox({
+        tab_toggle->Render(),
+        separator(),
+        tab_container->Render(),
+        guide->Render(),
+      }) | border | size(WIDTH, LESS_THAN, 100);
+    });
+    renderer |= CatchEvent([&](Event event) {
+      if (event == Event::Character('q') && tab_selected != 2) {
+        screen.ExitLoopClosure()();
+        return true;
+      }
+      if (event == Event::Character('u') && tab_selected != 2) {
+        remove_config(&confi, nonsudo[selected]);
+        return true;
+      }
+      if ((event == Event::Character(' ') || event == Event::Character('\n') || event == Event::Character('i')) && tab_selected != 2) {
+        install_config(&confi, nonsudo[selected], false);
+        return true;
+      }
+      if (event == Event::Character('f') && tab_selected != 2) {
+        install_config(&confi, nonsudo[selected], true);
+        return true;
+      }
+      return false;
+    });
+    screen.Loop(renderer);
   }
 }
 
