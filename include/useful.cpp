@@ -22,7 +22,7 @@ bool replace(std::string& str, const std::string& from, const std::string& to) {
     return true;
 }
 
-std::filesystem::path replace_home(std::filesystem::path& str) {
+std::filesystem::path replace_home(std::filesystem::path str) {
   std::string temp = str.string();
   replace(temp, "~", std::getenv("HOME"));
   const std::filesystem::path temppath = temp;

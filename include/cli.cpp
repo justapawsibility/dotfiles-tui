@@ -5,25 +5,33 @@ bool compareConfig(const config& a, const config& b) {
   return a.name < b.name;
 }
 
+void sort_configs(vector<config>& configs) {
+  sort(configs.begin(), configs.end(), compareConfig);
+}
 config_lista load_config() {
     vector<config> configurations;
     config_lista config_list;
     string buffer;
     ifstream FILE(CONF_FILE);
-    while(getline (FILE, buffer)) {
-        config temp;
-        vector<string> aftersplit = split(buffer, ",");
-        temp.name = aftersplit[0];
-        temp.source = aftersplit[1];
-        temp.dest = aftersplit[2];
-        temp.source2 = aftersplit[3];
-        temp.dest2 = aftersplit[4];
-        configurations.push_back(temp);
+    while (getline(FILE, buffer)) {
+      vector<string> parts = split(buffer, ",");
+      if (parts.size() < 5) {
+          cerr << "Invalid config line: " << buffer << endl;
+          continue; // skip malformed lines
+      }
+      config temp {
+          .name    = parts[0],
+          .source  = parts[1],
+          .dest    = parts[2],
+          .source2 = parts[3],
+          .dest2   = parts[4]
+      };
+      configurations.push_back(std::move(temp));
     }
     FILE.close();
-    sort(configurations.begin(), configurations.end(), compareConfig);
+    sort_configs(configurations);
     config_list.configurations = configurations;
-    for (config confi : configurations) {
+    for (const auto& confi : configurations) {
       if (confi.name.find('*') != string::npos) {
         config_list.sudo.push_back(confi.name);
       }
@@ -36,8 +44,8 @@ config_lista load_config() {
 
 void write_config(vector<config>* c) {
   ofstream FILE(CONF_FILE);
-  sort(c->begin(), c->end(), compareConfig);
-  for (config confi : *c) {
+  sort_configs(*c);
+  for (const auto& confi : *c) {
     FILE << confi.name << "," << confi.source.string() << "," << confi.dest.string() << "," << confi.source2.string() << "," << confi.dest2.string() << endl;
   }
   FILE.close();
@@ -65,7 +73,7 @@ void add5_config(vector<config>* c, string name, string source, string dest, str
 
 void delete_config(vector<config>* c, const string name) {
   vector<config> temp;
-  for (config confi : *c) {
+  for (const auto& confi : *c) {
     if (confi.name != name) {
       temp.push_back(confi);
     }
@@ -80,7 +88,7 @@ void delete_config(vector<config>* c, const string name) {
 }
 
 void print_config(vector<config>* configs, const string name) {
-  for (config confi : *configs) {
+  for (const auto& confi : *configs) {
     if (name == confi.name) {
       cout << "NAME: " << confi.name << endl;
       cout << "SOURCE: " << confi.source << endl;
@@ -94,7 +102,7 @@ void print_config(vector<config>* configs, const string name) {
 void list_config(vector<config>* configs) {
   vector<string> installed;
   vector<string> not_installed;
-  for (config confi : *configs) {
+  for (const auto& confi : *configs) {
       path temp_dest = replace_home(confi.dest);
       path temp_dest2 = replace_home(confi.dest2);
       if (is_symlink(temp_dest)) {
@@ -116,7 +124,7 @@ void list_config(vector<config>* configs) {
 }
 
 void install_config(vector<config>* configs, const string name, bool forced) {
-  for (config confi : *configs) {
+  for (const auto& confi : *configs) {
     if (name == confi.name) {
       path temp_src = weakly_canonical(replace_home(confi.source));
       path temp_dest = replace_home(confi.dest);
@@ -154,39 +162,20 @@ void install_config(vector<config>* configs, const string name, bool forced) {
   }
 }
 
-void remove_config(vector<config>* configs, const string name) {
-  for (config confi : *configs) {
-    if (name == confi.name) {
-      path temp_dest = replace_home(confi.dest);
-      path temp_dest2 = replace_home(confi.dest2);
-      if (is_symlink(temp_dest)) {
-        remove(temp_dest);
-        cout << temp_dest << " was removed (symlink)" << endl;
-      }
-      else if (is_directory(temp_dest)) {
-        cerr << temp_dest << " is a directory!" << endl;
-        exit(1);
-      }
-      else if (is_regular_file(temp_dest)) {
-        cerr << temp_dest << " is a regular file!" << endl;
-        exit(1);
-      }
-      if (is_symlink(temp_dest2)) {
-        remove(temp_dest2);
-        cout << temp_dest2 << " was removed (symlink)" << endl;
-      }
-      else if (temp_dest2 != "") {
-        cerr << temp_dest2 << " is not a symlink!" << endl;
-        exit(1);
-      }
-      else if (is_directory(temp_dest2)) {
-        cerr << temp_dest2 << " is a directory!" << endl;
-        exit(1);
-      }
-      else if (is_regular_file(temp_dest2)) {
-        cerr << temp_dest2 << " is a regular file!" << endl;
-        exit(1);
-      }
+void remove_symlink(const path& p) {
+    if (is_symlink(p)) {
+        remove(p);
+        cout << p << " was removed (symlink)" << endl;
+    } else if (!p.empty()) {
+        cerr << p << " is not a symlink!" << endl;
     }
-  }
+}
+
+void remove_config(vector<config>* configs, const string& name) {
+    for (const auto& confi : *configs) {
+        if (name == confi.name) {
+            remove_symlink(replace_home(confi.dest));
+            remove_symlink(replace_home(confi.dest2));
+        }
+    }
 }

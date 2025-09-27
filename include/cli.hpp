@@ -38,6 +38,6 @@ void delete_config(vector<config>* c, const string name);
 void print_config(vector<config>* configs, const string name);
 void list_config(vector<config>* configs);
 void install_config(vector<config>* configs, const string name, bool forced);
-void remove_config(vector<config>* configs, const string name);
+void remove_config(vector<config>* configs, const string& name);
 
 #endif
