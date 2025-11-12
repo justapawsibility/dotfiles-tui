@@ -8,6 +8,7 @@ bool compareConfig(const config& a, const config& b) {
 void sort_configs(vector<config>& configs) {
   sort(configs.begin(), configs.end(), compareConfig);
 }
+
 config_lista load_config() {
     vector<config> configurations;
     config_lista config_list;
