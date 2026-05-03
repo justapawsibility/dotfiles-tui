@@ -1,5 +1,5 @@
-#include "include/useful.hpp"
-#include "include/cli.hpp"
+#include "useful.hpp"
+#include "cli.hpp"
 #include <argparse/argparse.hpp>
 #include <ftxui/component/component.hpp>
 #include <ftxui/component/component_base.hpp>
