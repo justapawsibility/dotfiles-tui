@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 4.0.0)
-project(MyProject VERSION 1.0.0)
+project(dotfiles-mngr VERSION 1.0.0)
 
 include(FetchContent)
 FetchContent_Declare(ftxui
@@ -13,21 +13,24 @@ FetchContent_Declare(argparse
 )
 FetchContent_MakeAvailable(argparse)
 
-include_directories(include)
-
-add_executable(a.out
-  tui.cpp
+add_library(dotfiles_lib include/cli.cpp
   include/useful.cpp
-  include/useful.hpp
-  include/cli.cpp
-  include/cli.hpp
+)
+target_include_directories(dotfiles_lib PUBLIC
+  ${PROJECT_SOURCE_DIR}/include
+)
+# include_directories(include)
+
+add_executable(dotfiles
+  tui.cpp
   )
 
-target_link_libraries(a.out PRIVATE
+target_link_libraries(dotfiles PRIVATE
     # Chose a submodule
     ftxui::component
     ftxui::dom
     ftxui::screen
     argparse
+    dotfiles_lib
 )
 
