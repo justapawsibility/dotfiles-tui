@@ -1,0 +1,21 @@
+{
+  "version": 3,
+  "configurePresets": [
+    {
+      "name": "aarch64",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/aarch64",
+      "cacheVariables": {
+        "CMAKE_TOOLCHAIN_FILE": "toolchains/aarch64.cmake"
+      }
+    },
+    {
+      "name": "x86_64",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/x86_64",
+      "cacheVariables": {
+        "CMAKE_TOOLCHAIN_FILE": "toolchains/x86_64.cmake"
+      }
+    }
+  ]
+}
