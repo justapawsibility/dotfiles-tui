@@ -13,8 +13,14 @@ FetchContent_Declare(argparse
 )
 FetchContent_MakeAvailable(argparse)
 
+FetchContent_Declare(cpp_lib_personal
+  GIT_REPOSITORY https://github.com/TobiZehPanda/cpp_lib_personal.git
+  GIT_TAG main
+)
+FetchContent_MakeAvailable(cpp_lib_personal)
+
 add_library(dotfiles_lib
-  src/useful.cpp
+  # src/useful.cpp
   src/cli.cpp
 )
 target_include_directories(dotfiles_lib PUBLIC
@@ -25,6 +31,7 @@ target_link_libraries(dotfiles_lib PUBLIC
     ftxui::dom
     ftxui::screen
     argparse
+    cpp_lib_personal
 )
 # include_directories(include)
 

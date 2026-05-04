@@ -1,4 +1,4 @@
-#include "useful.hpp"
+// #include "useful.hpp"
 #include "cli.hpp"
 #include <argparse/argparse.hpp>
 #include <ftxui/component/component.hpp>
@@ -9,6 +9,7 @@
 #include <ftxui/dom/elements.hpp>
 #include <ftxui/dom/table.hpp>
 #include <ftxui/screen/screen.hpp>
+#include <cpp_lib_personal/main.hpp>
 
 using namespace ftxui;
 

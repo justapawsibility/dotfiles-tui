@@ -7,7 +7,7 @@
 #include <vector>
 #include <regex>
 #include <unistd.h>
-#include "useful.hpp"
+#include <cpp_lib_personal/main.hpp>
 
 #define CONF_FILE "configurations.csv"
 
