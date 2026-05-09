@@ -1,43 +1,124 @@
 #ifndef CLI
 #define CLI
 
-#include <iostream>
-#include <fstream>
 #include <filesystem>
 #include <vector>
 #include <regex>
 #include <unistd.h>
-#include <cpp_lib_personal/main.hpp>
+#include <glok/main.hpp>
 
 #define CONF_FILE "configurations.csv"
 
 using namespace std;
 using namespace filesystem;
 
-struct config {
-  public:
-      string name;
-      path source;
-      path dest;
-      path source2;
-      path dest2;
+void remove_symlink(const path& p) {
+    if (is_symlink(p)) {
+        remove(p);
+        cout << p << " was removed (symlink)" << endl;
+    } else if (!p.empty()) {
+        cerr << p << " is not a symlink!" << endl;
+    }
+}
+
+struct Config {
+  string name;
+  path source;
+  path dest;
+
+    Config(string n, path s, path d) : name(n), source(s), dest(d) {}
+
+    virtual void install() {
+      path temp_source = weakly_canonical(replace_home(source));
+      path temp_dest = replace_home(dest);
+
+      if (dest != "") {
+        // if (forced) {
+        //   cout << "force flag enabled, removing " << dest << endl;
+        remove_all(temp_dest);
+        // }
+        if (!temp_dest.parent_path().empty()) {
+          create_directories(temp_dest.parent_path());
+        }
+        try {
+          create_symlink(temp_source, temp_dest);
+          cout << "Creating symlink " << temp_source.string() << " -> " << temp_dest.string() << endl;
+        }
+        catch (const exception& err) {
+          cerr << err.what() << endl;
+        }
+      }
+
+    }
+
+    virtual void remove() {
+      remove_symlink(replace_home(dest));
+    }
+
+    virtual void print() {
+      cout << "NAME: " << name << endl;
+      cout << "SOURCE: " << source << endl;
+      cout << "DEST: " << dest << endl;
+    }
 };
 
-struct config_lista {
-  public:
-    vector<config> configurations;
-    vector<string> nonsudo;
-    vector<string> sudo;
+struct Config5 : Config {
+  path source2;
+  path dest2;
+  
+  Config5(string n, path s, path d, path s2, path d2) : Config(n, s, d), source2(s2), dest2(d2) {}
+
+  void install() override {
+    path temp_source = weakly_canonical(replace_home(source));
+    path temp_dest = replace_home(dest);
+    path temp_source2 = weakly_canonical(replace_home(source2));
+    path temp_dest2 = replace_home(dest2);
+    if (temp_dest != "") {
+      // if (forced) {
+      //   cout << "force flag enabled, removing " << temp_dest << endl;
+      remove_all(temp_dest);
+      // }
+      if (!temp_dest.parent_path().empty()) {
+        create_directories(temp_dest.parent_path());
+      }
+      try {
+        create_symlink(source, temp_dest);
+        cout << "Creating symlink " << temp_source.string() << " -> " << temp_dest.string() << endl;
+      }
+      catch (const exception& err) {
+        cerr << err.what() << endl;
+      }
+    }
+    if (temp_dest2 != "") {
+      // if (forced) {
+      //   cout << "force flag enabled, removing " << temp_dest2 << endl;
+      remove_all(temp_dest2);
+      // }
+      if (!temp_dest2.parent_path().empty()) {
+        create_directories(temp_dest2.parent_path());
+      }
+      try {
+        create_symlink(source2, temp_dest2);
+        cout << "Creating symlink " << temp_source2.string() << " -> " << temp_dest2.string() << endl;
+      }
+      catch (const exception& err) {
+        cerr << err.what() << endl;
+      }
+    }
+  }
+
+    void remove() override {
+      remove_symlink(replace_home(dest));
+      remove_symlink(replace_home(dest2));
+    }
+
+    void print() override {
+      cout << "NAME: " << name << endl;
+      cout << "SOURCE: " << source << endl;
+      cout << "DEST: " << dest << endl;
+      cout << "SOURCE2: " << source2 << endl;
+      cout << "DEST2: " << dest2 << endl;
+    }
 };
 
-config_lista load_config();
-void write_config(vector<config>* c);
-void add3_config(vector<config>* c, string name, string source, string dest);
-void add5_config(vector<config>* c, string name, string source, string dest, string source2, string dest2);
-void delete_config(vector<config>* c, const string name);
-void print_config(vector<config>* configs, const string name);
-void list_config(vector<config>* configs);
-void install_config(vector<config>* configs, const string name, bool forced);
-void remove_config(vector<config>* configs, const string& name);
-
-#endif
+#endif 

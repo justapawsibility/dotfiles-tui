@@ -1,5 +1,5 @@
-cmake_minimum_required(VERSION 3.20)
-project(dotfiles-mngr VERSION 1.0.0)
+cmake_minimum_required(VERSION 4.0.0)
+project(dotfiles_manager)
 
 include(FetchContent)
 FetchContent_Declare(ftxui
@@ -13,33 +13,31 @@ FetchContent_Declare(argparse
 )
 FetchContent_MakeAvailable(argparse)
 
-FetchContent_Declare(cpp_lib_personal
-  GIT_REPOSITORY https://github.com/TobiZehPanda/cpp_lib_personal.git
+FetchContent_Declare(glok
+  GIT_REPOSITORY https://github.com/TobiZehPanda/grand_library_of_knowledge.git
   GIT_TAG main
 )
-FetchContent_MakeAvailable(cpp_lib_personal)
+FetchContent_MakeAvailable(glok)
 
-add_library(dotfiles_lib
-  # src/useful.cpp
-  src/cli.cpp
+add_executable(dotfiles
+  src/main.cpp
 )
-target_include_directories(dotfiles_lib PUBLIC
+
+target_include_directories(dotfiles PUBLIC
   ${PROJECT_SOURCE_DIR}/include
 )
-target_link_libraries(dotfiles_lib PUBLIC
+
+target_link_libraries(dotfiles PUBLIC
     ftxui::component
     ftxui::dom
     ftxui::screen
     argparse
-    cpp_lib_personal
+    glok
 )
 # include_directories(include)
 
-add_executable(dotfiles
-  src/tui.cpp
-  )
 
-target_link_libraries(dotfiles PRIVATE
-    dotfiles_lib
-)
+# target_link_libraries(dotfiles PRIVATE
+#     dotfiles_lib
+# )
 
