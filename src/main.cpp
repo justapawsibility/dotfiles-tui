@@ -118,6 +118,7 @@ Component VMenu(vector<string>* entries, int* selected, vector<Config*>* configs
 // ─── Main ───────────────────────────────────────────────────────────────────
 
 int main(int argc, char* argv[]) {
+    bool force = false;
     vector<Config*> configs;
     load_config(configs);
     auto [nonsudo, sudo_list] = sudo_bind(configs);
@@ -126,6 +127,7 @@ int main(int argc, char* argv[]) {
     program.add_argument("-l", "--list").flag().help("lists configurations");
     program.add_argument("-s", "--sort").flag().help("sorts and saves configurations");
     program.add_group("Management");
+    program.add_argument("-f", "--force").flag().help("enables the use of force");
     program.add_argument("-i", "--install")
         .nargs(argparse::nargs_pattern::at_least_one)
         .metavar("CONFIG").help("installs a config");
@@ -145,6 +147,8 @@ int main(int argc, char* argv[]) {
     }
 
     if (argc >= 2) {
+        if (program["-f"] == true)
+          force = true;
         if (program["-s"] == true)
             write_config(configs);
 
@@ -152,7 +156,7 @@ int main(int argc, char* argv[]) {
             for (const auto& str : program.get<vector<string>>("-i"))
                 for (auto& config : configs)
                     if (config->name == str)
-                        config->install();
+                        config->install(force);
         }
 
         if (program.present("-r")) {
@@ -178,6 +182,8 @@ int main(int argc, char* argv[]) {
             text(" q: quit ")              | bold | color(Color::RedLight),
             text(" │ "),
             text(" i/space: install ")     | bold | color(Color::GreenLight),
+            text(" │ "),
+            text(" f: force install ")     | bold | color(Color::YellowLight),
             text(" │ "),
             text(" u: uninstall ")         | bold | color(Color::BlueLight),
         };
@@ -222,11 +228,17 @@ int main(int argc, char* argv[]) {
                     config->remove();
             return true;
         }
+        if (event == Event::Character('f') && tab_selected == 0 && selected < (int)nonsudo.size()) {
+            for (auto& config : configs)
+                if (config->name == nonsudo[selected])
+                    config->install(true);
+            return true;
+        }
         if ((event == Event::Character(' ') || event == Event::Character('i') || event == Event::Return)
             && tab_selected == 0 && selected < (int)nonsudo.size()) {
             for (auto& config : configs)
                 if (config->name == nonsudo[selected])
-                    config->install();
+                    config->install(false);
             return true;
         }
         return false;
