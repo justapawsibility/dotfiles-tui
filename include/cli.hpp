@@ -7,7 +7,7 @@
 #include <unistd.h>
 #include <glok/main.hpp>
 
-#define CONF_FILE "configurations.csv"
+#define CONF_FILE "configurations.toml"
 
 using namespace std;
 using namespace filesystem;

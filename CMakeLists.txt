@@ -13,6 +13,12 @@ FetchContent_Declare(argparse
 )
 FetchContent_MakeAvailable(argparse)
 
+FetchContent_Declare(tomlplusplus
+  GIT_REPOSITORY https://github.com/marzer/tomlplusplus.git
+  GIT_TAG v3.4.0
+)
+FetchContent_MakeAvailable(tomlplusplus)
+
 FetchContent_Declare(glok
   GIT_REPOSITORY https://github.com/TobiZehPanda/grand_library_of_knowledge.git
   GIT_TAG main
@@ -32,6 +38,7 @@ target_link_libraries(dotfiles PUBLIC
     ftxui::dom
     ftxui::screen
     argparse
+    tomlplusplus::tomlplusplus
     glok
 )
 # include_directories(include)

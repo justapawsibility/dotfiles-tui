@@ -4,11 +4,15 @@
 #include "cli.hpp"
 #include <glok/main.hpp>
 #include <fstream>
+#include <toml++/impl/formatter.hpp>
+#include <toml++/impl/parse_error.hpp>
+#include <toml++/impl/parser.hpp>
 #include <unistd.h>
 #include <vector>
 #include <utility>
 #include <algorithm>
 #include <argparse/argparse.hpp>
+#include <toml++/toml.hpp>
 #include <ftxui/component/component.hpp>
 #include <ftxui/component/component_base.hpp>
 #include <ftxui/component/component_options.hpp>
@@ -46,35 +50,88 @@ pair<vector<string>, vector<string>> list_config_tui(vector<Config*>& configs) {
 // ─── Config IO ──────────────────────────────────────────────────────────────
 
 void load_config(vector<Config*>& configurations) {
-    string buffer;
-    ifstream file(CONF_FILE);
-    while (getline(file, buffer)) {
-        vector<string> parts = split(buffer, ",");
-        Config* temp = nullptr;
-        if (parts.size() == 3) {
-            temp = new Config(parts[0], parts[1], parts[2]);
-        } else if (parts.size() == 5) {
-            temp = new Config5(parts[0], parts[1], parts[2], parts[3], parts[4]);
-        } else {
-            cout << "invalid config: " << buffer << endl;
-            continue;
-        }
-        configurations.push_back(temp);
+  toml::table tbl;
+  try {
+    tbl = toml::parse_file(CONF_FILE);
+  }
+  catch (const toml::parse_error& err) {
+    cerr << "Config parse error: " << err.what() << endl;
+    return;
+  }
+
+  auto arr = tbl["config"].as_array();
+  if (!arr) return;
+
+  arr->for_each([&](toml::table& entry) {
+    string name = entry["name"].value_or("");
+    string source = entry["source"].value_or("");
+    string dest = entry["dest"].value_or("");
+    string source2 = entry["source2"].value_or("");
+    string dest2 = entry["dest2"].value_or("");
+
+    if (name.empty() || source.empty() || dest.empty()) {
+      cout << "invalid config entry, skipping" << endl;
+      return;
     }
+
+    if (!source2.empty() && !dest2.empty()) {
+      configurations.push_back(new Config5(name, source, dest, source2, dest2));
+    }
+    else {
+      configurations.push_back(new Config(name, source, dest));
+    }
+  });
+    // string buffer;
+    // ifstream file(CONF_FILE);
+    // while (getline(file, buffer)) {
+    //     vector<string> parts = split(buffer, ",");
+    //     Config* temp = nullptr;
+    //     if (parts.size() == 3) {
+    //         temp = new Config(parts[0], parts[1], parts[2]);
+    //     } else if (parts.size() == 5) {
+    //         temp = new Config5(parts[0], parts[1], parts[2], parts[3], parts[4]);
+    //     } else {
+    //         cout << "invalid config: " << buffer << endl;
+    //         continue;
+    //     }
+    //     configurations.push_back(temp);
+    // }
 }
 
 void write_config(vector<Config*>& c) {
-    ofstream file(CONF_FILE);
-    sort_configs(c);
-    for (const auto& config : c) {
-        Config5* c5 = dynamic_cast<Config5*>(config);
-        if (c5) {
-            file << c5->name << "," << c5->source.string() << "," << c5->dest.string()
-                 << "," << c5->source2.string() << "," << c5->dest2.string() << endl;
-        } else {
-            file << config->name << "," << config->source.string() << "," << config->dest.string() << endl;
-        }
+  sort_configs(c);
+
+  toml::array arr;
+  for (const auto& config : c) {
+    toml::table entry;
+    entry.insert("name", config->name);
+    entry.insert("source", config->source.string());
+    entry.insert("dest", config->dest.string());
+
+    Config5* c5 = dynamic_cast<Config5*>(config);
+    if (c5) {
+      entry.insert("source2", c5->source2.string());
+      entry.insert("dest2", c5->dest2.string());
     }
+
+    arr.push_back(entry);
+
+    toml::table tbl;
+    tbl.insert("config", arr);
+    ofstream file(CONF_FILE);
+    file << tbl;
+  }
+    // ofstream file(CONF_FILE);
+    // sort_configs(c);
+    // for (const auto& config : c) {
+    //     Config5* c5 = dynamic_cast<Config5*>(config);
+    //     if (c5) {
+    //         file << c5->name << "," << c5->source.string() << "," << c5->dest.string()
+    //              << "," << c5->source2.string() << "," << c5->dest2.string() << endl;
+    //     } else {
+    //         file << config->name << "," << config->source.string() << "," << config->dest.string() << endl;
+    //     }
+    // }
 }
 
 void list_config(vector<Config*>& configs) {
