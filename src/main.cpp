@@ -248,12 +248,13 @@ int main(int argc, char* argv[]) {
     });
 
     int selected = 0;
+    int selected_sudo = 0;
     int tab_selected = 0;
     vector<string> tab_values{"Normal", "Sudo"};
 
     auto tab_toggle     = Toggle(&tab_values, &tab_selected);
-    auto vmenu_nonsudo  = VMenu(&nonsudo,   &selected, &configs);
-    auto vmenu_sudo     = VMenu(&sudo_list, &selected, &configs);
+    auto vmenu_nonsudo  = VMenu(&nonsudo,   &selected,      &configs);
+    auto vmenu_sudo     = VMenu(&sudo_list, &selected_sudo, &configs);
 
     Components tab_children = {vmenu_nonsudo, vmenu_sudo};
     auto tab_container = Container::Tab(tab_children, &tab_selected);
@@ -274,27 +275,35 @@ int main(int argc, char* argv[]) {
         return vbox(elems) | borderDouble | size(WIDTH, LESS_THAN, 100) | flex;
     });
 
+    // Resolve the list/cursor for whichever tab is active.
+    auto active_list = [&]() -> vector<string>& {
+        return tab_selected == 0 ? nonsudo : sudo_list;
+    };
+    auto active_selected = [&]() -> int& {
+        return tab_selected == 0 ? selected : selected_sudo;
+    };
+
     renderer |= CatchEvent([&](Event event) {
         if (event == Event::Character('q') && tab_selected != 2) {
             screen.ExitLoopClosure()();
             return true;
         }
-        if (event == Event::Character('u') && tab_selected == 0 && selected < (int)nonsudo.size()) {
+        if (event == Event::Character('u') && active_selected() < (int)active_list().size()) {
             for (auto& config : configs)
-                if (config->name == nonsudo[selected])
+                if (config->name == active_list()[active_selected()])
                     config->remove();
             return true;
         }
-        if (event == Event::Character('f') && tab_selected == 0 && selected < (int)nonsudo.size()) {
+        if (event == Event::Character('f') && active_selected() < (int)active_list().size()) {
             for (auto& config : configs)
-                if (config->name == nonsudo[selected])
+                if (config->name == active_list()[active_selected()])
                     config->install(true);
             return true;
         }
         if ((event == Event::Character(' ') || event == Event::Character('i') || event == Event::Return)
-            && tab_selected == 0 && selected < (int)nonsudo.size()) {
+            && active_selected() < (int)active_list().size()) {
             for (auto& config : configs)
-                if (config->name == nonsudo[selected])
+                if (config->name == active_list()[active_selected()])
                     config->install(false);
             return true;
         }
