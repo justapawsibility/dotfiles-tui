@@ -39,6 +39,7 @@ directory**, so run it from a directory containing that file.
 ./build/x86_64/dotfiles -l           # list installed / not-installed
 ./build/x86_64/dotfiles -i NAME...   # install (symlink) config(s)
 ./build/x86_64/dotfiles -r NAME...   # uninstall (remove symlink)
+./build/x86_64/dotfiles -d NAME...   # delete: remove symlink + drop entry from the toml
 ./build/x86_64/dotfiles -f -i NAME   # --force: remove_all(dest) before linking
 ./build/x86_64/dotfiles -s           # sort configs and rewrite the toml
 ```

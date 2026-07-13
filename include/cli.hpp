@@ -16,7 +16,7 @@ void remove_symlink(const path& p) {
     if (is_symlink(p)) {
         remove(p);
         cout << p << " was removed (symlink)" << endl;
-    } else if (!p.empty()) {
+    } else if (exists(p)) {
         cerr << p << " is not a symlink!" << endl;
     }
 }
@@ -82,7 +82,7 @@ struct Config5 : Config {
         create_directories(temp_dest2.parent_path());
       }
       try {
-        create_symlink(source2, temp_dest2);
+        create_symlink(temp_source2, temp_dest2);
         cout << "Creating symlink " << temp_source2.string() << " -> " << temp_dest2.string() << endl;
       }
       catch (const exception& err) {
