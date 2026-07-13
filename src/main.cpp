@@ -10,6 +10,7 @@
 #include <unistd.h>
 #include <vector>
 #include <utility>
+#include <memory>
 #include <algorithm>
 #include <argparse/argparse.hpp>
 #include <toml++/toml.hpp>
@@ -27,15 +28,15 @@ using namespace ftxui;
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
-bool compareConfig(Config* a, Config* b) {
+bool compareConfig(const unique_ptr<Config>& a, const unique_ptr<Config>& b) {
     return a->name < b->name;
 }
 
-void sort_configs(vector<Config*>& configs) {
+void sort_configs(vector<unique_ptr<Config>>& configs) {
     sort(configs.begin(), configs.end(), compareConfig);
 }
 
-pair<vector<string>, vector<string>> list_config_tui(vector<Config*>& configs) {
+pair<vector<string>, vector<string>> list_config_tui(vector<unique_ptr<Config>>& configs) {
     vector<string> installed, not_installed;
     for (auto& config : configs) {
         path temp_dest = replace_home(config->dest);
@@ -49,7 +50,7 @@ pair<vector<string>, vector<string>> list_config_tui(vector<Config*>& configs) {
 
 // ─── Config IO ──────────────────────────────────────────────────────────────
 
-void load_config(vector<Config*>& configurations) {
+void load_config(vector<unique_ptr<Config>>& configurations) {
   toml::table tbl;
   try {
     tbl = toml::parse_file(CONF_FILE);
@@ -75,10 +76,10 @@ void load_config(vector<Config*>& configurations) {
     }
 
     if (!source2.empty() && !dest2.empty()) {
-      configurations.push_back(new Config5(name, source, dest, source2, dest2));
+      configurations.push_back(make_unique<Config5>(name, source, dest, source2, dest2));
     }
     else {
-      configurations.push_back(new Config(name, source, dest));
+      configurations.push_back(make_unique<Config>(name, source, dest));
     }
   });
     // string buffer;
@@ -98,7 +99,7 @@ void load_config(vector<Config*>& configurations) {
     // }
 }
 
-void write_config(vector<Config*>& c) {
+void write_config(vector<unique_ptr<Config>>& c) {
   sort_configs(c);
 
   toml::array arr;
@@ -108,7 +109,7 @@ void write_config(vector<Config*>& c) {
     entry.insert("source", config->source.string());
     entry.insert("dest", config->dest.string());
 
-    Config5* c5 = dynamic_cast<Config5*>(config);
+    Config5* c5 = dynamic_cast<Config5*>(config.get());
     if (c5) {
       entry.insert("source2", c5->source2.string());
       entry.insert("dest2", c5->dest2.string());
@@ -134,7 +135,7 @@ void write_config(vector<Config*>& c) {
     // }
 }
 
-void list_config(vector<Config*>& configs) {
+void list_config(vector<unique_ptr<Config>>& configs) {
     auto [installed, not_installed] = list_config_tui(configs);
     cout << "--------INSTALLED-------" << endl;
     for (const auto& i : installed)
@@ -144,7 +145,7 @@ void list_config(vector<Config*>& configs) {
         cout << n << endl;
 }
 
-pair<vector<string>, vector<string>> sudo_bind(vector<Config*>& configs) {
+pair<vector<string>, vector<string>> sudo_bind(vector<unique_ptr<Config>>& configs) {
     vector<string> sudo_list, nonsudo;
     for (const auto& config : configs) {
         if (config->name.find('*') != string::npos)
@@ -157,7 +158,7 @@ pair<vector<string>, vector<string>> sudo_bind(vector<Config*>& configs) {
 
 // ─── TUI ────────────────────────────────────────────────────────────────────
 
-Component VMenu(vector<string>* entries, int* selected, vector<Config*>* configs) {
+Component VMenu(vector<string>* entries, int* selected, vector<unique_ptr<Config>>* configs) {
     auto option = MenuOption::Vertical();
     option.entries_option.transform = [configs](EntryState state) {
         Element e = state.active ? text("[" + state.label + "]")
@@ -176,7 +177,7 @@ Component VMenu(vector<string>* entries, int* selected, vector<Config*>* configs
 
 int main(int argc, char* argv[]) {
     bool force = false;
-    vector<Config*> configs;
+    vector<unique_ptr<Config>> configs;
     load_config(configs);
     auto [nonsudo, sudo_list] = sudo_bind(configs);
 
@@ -228,8 +229,7 @@ int main(int argc, char* argv[]) {
                 for (auto it = configs.begin(); it != configs.end(); ) {
                     if ((*it)->name == str) {
                         (*it)->remove();   // drop the symlink(s) first
-                        delete *it;        // free the heap-allocated Config
-                        it = configs.erase(it);
+                        it = configs.erase(it);  // unique_ptr frees the Config
                     } else {
                         ++it;
                     }
