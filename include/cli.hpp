@@ -16,7 +16,7 @@ void remove_symlink(const path& p) {
     if (is_symlink(p)) {
         remove(p);
         cout << p << " was removed (symlink)" << endl;
-    } else if (!p.empty()) {
+    } else if (exists(p)) {
         cerr << p << " is not a symlink!" << endl;
     }
 }
