@@ -115,12 +115,12 @@ void write_config(vector<Config*>& c) {
     }
 
     arr.push_back(entry);
-
-    toml::table tbl;
-    tbl.insert("config", arr);
-    ofstream file(CONF_FILE);
-    file << tbl;
   }
+
+  toml::table tbl;
+  tbl.insert("config", arr);
+  ofstream file(CONF_FILE);
+  file << tbl;
     // ofstream file(CONF_FILE);
     // sort_configs(c);
     // for (const auto& config : c) {
@@ -223,6 +223,20 @@ int main(int argc, char* argv[]) {
                         config->remove();
         }
 
+        if (program.present("-d")) {
+            for (const auto& str : program.get<vector<string>>("-d"))
+                for (auto it = configs.begin(); it != configs.end(); ) {
+                    if ((*it)->name == str) {
+                        (*it)->remove();   // drop the symlink(s) first
+                        delete *it;        // free the heap-allocated Config
+                        it = configs.erase(it);
+                    } else {
+                        ++it;
+                    }
+                }
+            write_config(configs);         // persist the removal to the toml
+        }
+
         if (program["-l"] == true) {
             list_config(configs);
             exit(0);
@@ -284,7 +298,7 @@ int main(int argc, char* argv[]) {
     };
 
     renderer |= CatchEvent([&](Event event) {
-        if (event == Event::Character('q') && tab_selected != 2) {
+        if (event == Event::Character('q')) {
             screen.ExitLoopClosure()();
             return true;
         }
